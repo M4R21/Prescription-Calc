@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1e40af">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="処方計算">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon-192.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icon-192.svg">
+    <title>処方日数計算ツール</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --primary-light: #60a5fa;
+            --accent: #10b981;
+            --bg: #f0f2f5;
+            --card: #ffffff;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --border: #e5e7eb;
+            --radius: 14px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .app-header {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            color: #fff;
+            padding: 16px 20px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .app-header h1 {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .app-header p {
+            font-size: 0.75rem;
+            opacity: 0.85;
+            margin-top: 2px;
+        }
+
+        .content {
+            padding: 12px 16px 100px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 14px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .field {
+            margin-bottom: 10px;
+        }
+
+        .field:last-child {
+            margin-bottom: 0;
+        }
+
+        .label-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .field label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--text);
+        }
+
+        .lock-toggle {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 0.7rem;
+            color: var(--text-light);
+            opacity: 0.5;
+            cursor: pointer;
+        }
+
+        .lock-toggle:has(input:checked) {
+            opacity: 1;
+            color: var(--primary);
+        }
+
+        .lock-toggle input {
+            width: 15px;
+            height: 15px;
+            accent-color: var(--primary);
+        }
+
+        .field input[type="date"],
+        .field input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            font-size: 16px;
+            font-family: inherit;
+            background: #f9fafb;
+            -webkit-appearance: none;
+        }
+
+        .field input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        .helper {
+            font-size: 0.7rem;
+            color: var(--text-light);
+            margin-top: 2px;
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .row>.field {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        /* Result Section */
+        .result-card {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            color: #fff;
+            border-radius: var(--radius);
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .result-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .result-item {
+            flex: 1;
+            text-align: center;
+            padding: 8px 4px;
+        }
+
+        .result-item .r-label {
+            font-size: 0.72rem;
+            opacity: 0.85;
+            margin-bottom: 2px;
+        }
+
+        .result-item .r-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .r-unit {
+            font-size: 0.75rem;
+            font-weight: 500;
+            opacity: 0.8;
+        }
+
+        .result-highlight {
+            background: rgba(255, 255, 255, 0.18);
+            border-radius: 10px;
+            padding: 10px 8px;
+            text-align: center;
+        }
+
+        .result-highlight .r-label {
+            font-size: 0.78rem;
+            opacity: 0.9;
+            margin-bottom: 4px;
+        }
+
+        .presc-input-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        #prescriptionDays {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #fff;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+            width: 100px;
+            text-align: center;
+            padding: 0 4px;
+            outline: none;
+            font-family: inherit;
+        }
+
+        #prescriptionDays:focus {
+            border-bottom-color: #fff;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        #prescriptionDays::-webkit-inner-spin-button,
+        #prescriptionDays::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+        }
+
+        .presc-unit {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .end-date-row {
+            text-align: center;
+            padding: 4px 0 0;
+        }
+
+        .end-date-row .r-label {
+            font-size: 0.75rem;
+            opacity: 0.85;
+        }
+
+        .end-date-row .r-value {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        /* Reset Button */
+        .reset-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-light);
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+            font-family: inherit;
+            transition: background 0.2s;
+        }
+
+        .reset-btn:active {
+            background: #f3f4f6;
+        }
+
+        /* Calendar */
+        .cal-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .cal-controls button {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 14px;
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        .cal-controls button:active {
+            background: #f3f4f6;
+        }
+
+        .cal-month {
+            font-weight: 600;
+            color: var(--primary-dark);
+            font-size: 0.95rem;
+        }
+
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 3px;
+            text-align: center;
+        }
+
+        .cal-head {
+            font-size: 0.7rem;
+            color: var(--text-light);
+            padding-bottom: 4px;
+        }
+
+        .cal-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            border-radius: 50%;
+        }
+
+        .cal-day.today {
+            border: 2px solid var(--primary-light);
+            font-weight: 700;
+        }
+
+        .cal-day.start-date {
+            background: var(--primary-dark);
+            color: #fff;
+        }
+
+        .cal-day.visit-date {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .cal-day.covered {
+            background: #e5e7eb;
+            color: var(--text-light);
+        }
+
+        .cal-day.prescription {
+            background: var(--primary-light);
+            color: #fff;
+            opacity: 0.8;
+        }
+
+        .cal-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 8px;
+            font-size: 0.7rem;
+            color: var(--text-light);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .dot.s {
+            background: var(--primary-dark);
+        }
+
+        .dot.v {
+            background: var(--accent);
+        }
+
+        .dot.c {
+            background: #e5e7eb;
+        }
+
+        .dot.p {
+            background: var(--primary-light);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-header">
+        <h1>処方日数計算ツール</h1>
+        <p>次回の受診日までの処方日数を自動計算</p>
+    </div>
+
+    <div class="content">
+        <!-- Input Card -->
+        <div class="card">
+            <div class="field">
+                <label>服用開始日</label>
+                <input type="date" id="startDate">
+                <div class="helper">デフォルト: 翌日</div>
+            </div>
+            <div class="field">
+                <div class="label-row">
+                    <label>次回受診日</label>
+                    <label class="lock-toggle"><input type="checkbox" id="lockNextVisit">🔒</label>
+                </div>
+                <input type="date" id="nextVisitDate">
+            </div>
+            <div class="row">
+                <div class="field">
+                    <div class="label-row">
+                        <label>残薬数</label>
+                        <label class="lock-toggle"><input type="checkbox" id="lockLeftover">🔒</label>
+                    </div>
+                    <input type="number" id="leftover" min="0" value="0" inputmode="numeric">
+                </div>
+                <div class="field">
+                    <div class="label-row">
+                        <label>1日の服用数</label>
+                        <label class="lock-toggle"><input type="checkbox" id="lockDosage">🔒</label>
+                    </div>
+                    <input type="number" id="dosagePerDay" min="1" value="1" inputmode="numeric">
+                </div>
+            </div>
+            <button class="reset-btn" id="resetBtn">設定をクリア（初期値に戻す）</button>
+        </div>
+
+        <!-- Result Card -->
+        <div class="result-card">
+            <div class="result-row">
+                <div class="result-item">
+                    <div class="r-label">次回受診まで</div>
+                    <div class="r-value" id="daysUntilVisit">0<span class="r-unit">日</span></div>
+                </div>
+                <div class="result-item">
+                    <div class="r-label">残薬カバー日数</div>
+                    <div class="r-value" id="daysCovered">0<span class="r-unit">日</span></div>
+                </div>
+            </div>
+            <div class="result-highlight">
+                <div class="r-label">今回処方日数（変更可）</div>
+                <div class="presc-input-row">
+                    <input type="number" id="prescriptionDays" value="0" min="0" inputmode="numeric">
+                    <span class="presc-unit">日分</span>
+                </div>
+            </div>
+            <div class="end-date-row">
+                <div class="r-label">服用終了予定日</div>
+                <div class="r-value" id="endDate">--/--</div>
+            </div>
+        </div>
+
+        <!-- Calendar Card -->
+        <div class="card">
+            <div class="cal-controls">
+                <button id="prevMonth">&lt;</button>
+                <span class="cal-month" id="currentMonthYear"></span>
+                <button id="nextMonth">&gt;</button>
+            </div>
+            <div class="cal-grid" id="calendarGrid"></div>
+            <div class="cal-legend">
+                <span class="legend-item"><span class="dot s"></span>開始日</span>
+                <span class="legend-item"><span class="dot v"></span>受診日</span>
+                <span class="legend-item"><span class="dot c"></span>残薬期間</span>
+                <span class="legend-item"><span class="dot p"></span>処方期間</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').catch(() => { });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const $ = id => document.getElementById(id);
+
+            const startDateInput = $('startDate');
+            const nextVisitDateInput = $('nextVisitDate');
+            const leftoverInput = $('leftover');
+            const dosageInput = $('dosagePerDay');
+            const daysUntilVisitDisplay = $('daysUntilVisit');
+            const daysCoveredDisplay = $('daysCovered');
+            const prescriptionDaysInput = $('prescriptionDays');
+            const endDateDisplay = $('endDate');
+            const prevMonthBtn = $('prevMonth');
+            const nextMonthBtn = $('nextMonth');
+            const currentMonthYearDisplay = $('currentMonthYear');
+            const calendarGrid = $('calendarGrid');
+            const resetBtn = $('resetBtn');
+            const lockNextVisit = $('lockNextVisit');
+            const lockLeftover = $('lockLeftover');
+            const lockDosage = $('lockDosage');
+
+            let calendarDate = new Date();
+
+            function setDefaults() {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                startDateInput.valueAsDate = tomorrow;
+                if (!lockLeftover.checked) leftoverInput.value = 0;
+                if (!lockDosage.checked) dosageInput.value = 1;
+                if (!lockNextVisit.checked) nextVisitDateInput.value = '';
+                prescriptionDaysInput.value = 0;
+                endDateDisplay.textContent = '--/--';
+                calculateFromDate();
+                calendarDate = new Date();
+                renderCalendar();
+            }
+
+            setDefaults();
+
+            [startDateInput, nextVisitDateInput, leftoverInput, dosageInput].forEach(el =>
+                el.addEventListener('input', () => calculateFromDate())
+            );
+            prescriptionDaysInput.addEventListener('input', () => calculateFromDays());
+            resetBtn.addEventListener('click', setDefaults);
+
+            prevMonthBtn.addEventListener('click', () => {
+                calendarDate.setMonth(calendarDate.getMonth() - 1);
+                renderCalendar();
+            });
+            nextMonthBtn.addEventListener('click', () => {
+                calendarDate.setMonth(calendarDate.getMonth() + 1);
+                renderCalendar();
+            });
+
+            function setText(el, val) {
+                el.innerHTML = `${val}<span class="r-unit">日</span>`;
+            }
+
+            function formatDate(d) {
+                if (!d) return '--/--';
+                const w = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
+                return `${d.getMonth() + 1}/${d.getDate()} (${w})`;
+            }
+
+            function norm(d) {
+                const x = new Date(d);
+                x.setHours(0, 0, 0, 0);
+                return x;
+            }
+
+            function getInputs() {
+                return {
+                    startDate: startDateInput.value ? norm(startDateInput.value) : null,
+                    nextVisitDate: nextVisitDateInput.value ? norm(nextVisitDateInput.value) : null,
+                    leftover: parseInt(leftoverInput.value) || 0,
+                    dosage: parseInt(dosageInput.value) || 1,
+                    prescriptionDays: parseInt(prescriptionDaysInput.value) || 0
+                };
+            }
+
+            function calculateFromDate() {
+                const { startDate, nextVisitDate, leftover, dosage } = getInputs();
+                if (!startDate) return;
+
+                const daysCovered = Math.floor(leftover / dosage);
+                setText(daysCoveredDisplay, daysCovered);
+
+                if (nextVisitDate) {
+                    if (nextVisitDate <= startDate) {
+                        setText(daysUntilVisitDisplay, 0);
+                        prescriptionDaysInput.value = 0;
+                        endDateDisplay.textContent = '--/--';
+                        renderCalendar();
+                        return;
+                    }
+                    const daysDiff = Math.ceil((nextVisitDate - startDate) / 864e5);
+                    setText(daysUntilVisitDisplay, daysDiff);
+
+                    let pd = daysDiff - daysCovered;
+                    if (pd < 0) pd = 0;
+                    prescriptionDaysInput.value = pd;
+
+                    const totalDays = daysCovered + pd;
+                    if (totalDays > 0) {
+                        const end = new Date(startDate);
+                        end.setDate(end.getDate() + totalDays - 1);
+                        endDateDisplay.textContent = formatDate(end);
+                    } else {
+                        endDateDisplay.textContent = '--/--';
+                    }
+                } else {
+                    setText(daysUntilVisitDisplay, '-');
+                }
+                renderCalendar();
+            }
+
+            function calculateFromDays() {
+                const { startDate, leftover, dosage, prescriptionDays } = getInputs();
+                if (!startDate) return;
+
+                const daysCovered = Math.floor(leftover / dosage);
+                setText(daysCoveredDisplay, daysCovered);
+
+                const total = daysCovered + prescriptionDays;
+                if (total > 0) {
+                    const end = new Date(startDate);
+                    end.setDate(end.getDate() + total - 1);
+                    endDateDisplay.textContent = formatDate(end);
+
+                    const nv = new Date(startDate);
+                    nv.setDate(nv.getDate() + total);
+                    nextVisitDateInput.valueAsDate = nv;
+
+                    setText(daysUntilVisitDisplay, Math.ceil((nv - startDate) / 864e5));
+                } else {
+                    endDateDisplay.textContent = '--/--';
+                }
+                renderCalendar();
+            }
+
+            function renderCalendar() {
+                calendarGrid.innerHTML = '';
+                const year = calendarDate.getFullYear();
+                const month = calendarDate.getMonth();
+                currentMonthYearDisplay.textContent = `${year}年 ${month + 1}月`;
+
+                ['日', '月', '火', '水', '木', '金', '土'].forEach(d => {
+                    const el = document.createElement('div');
+                    el.className = 'cal-head';
+                    el.textContent = d;
+                    calendarGrid.appendChild(el);
+                });
+
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+                for (let i = 0; i < firstDay; i++) {
+                    const el = document.createElement('div');
+                    el.className = 'cal-day';
+                    calendarGrid.appendChild(el);
+                }
+
+                const startDate = startDateInput.value ? norm(startDateInput.value) : null;
+                const nextVisitDate = nextVisitDateInput.value ? norm(nextVisitDateInput.value) : null;
+                const leftover = parseInt(leftoverInput.value) || 0;
+                const dosage = parseInt(dosageInput.value) || 1;
+                const daysCovered = Math.floor(leftover / dosage);
+                const today = norm(new Date());
+
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const el = document.createElement('div');
+                    el.className = 'cal-day';
+                    el.textContent = d;
+                    const thisDate = new Date(year, month, d);
+
+                    if (thisDate.getTime() === today.getTime()) el.classList.add('today');
+
+                    if (startDate && nextVisitDate) {
+                        const offset = Math.ceil((thisDate - startDate) / 864e5);
+                        if (thisDate.getTime() === nextVisitDate.getTime()) {
+                            el.classList.add('visit-date');
+                        } else if (thisDate.getTime() === startDate.getTime()) {
+                            el.classList.add('start-date');
+                        } else if (thisDate > startDate && thisDate < nextVisitDate) {
+                            el.classList.add(offset >= 0 && offset < daysCovered ? 'covered' : 'prescription');
+                        }
+                    } else if (startDate && !nextVisitDate) {
+                        if (thisDate.getTime() === startDate.getTime()) {
+                            el.classList.add('start-date');
+                        } else if (thisDate > startDate) {
+                            const offset = Math.floor((thisDate - startDate) / 864e5);
+                            if (offset < daysCovered) el.classList.add('covered');
+                        }
+                    }
+                    calendarGrid.appendChild(el);
+                }
+            }
+
+            calculateFromDate();
+        });
+    </script>
+</body>
+
+</html>
