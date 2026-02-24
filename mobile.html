@@ -479,7 +479,17 @@
     <script>
         // Register Service Worker
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js').catch(() => { });
+            navigator.serviceWorker.register('./sw.js').then(reg => {
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            // 新しいバージョンがインストールされたら自動リロード
+                            window.location.reload();
+                        }
+                    });
+                });
+            }).catch(() => { });
         }
 
         document.addEventListener('DOMContentLoaded', () => {

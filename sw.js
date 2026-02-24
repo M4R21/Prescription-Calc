@@ -1,4 +1,4 @@
-const CACHE_NAME = 'prescription-calc-v1';
+const CACHE_NAME = 'prescription-calc-v1.1'; // 更新時はこの数字を1.2のように変える
 const ASSETS = [
     './mobile.html',
     './icon-192.svg',
@@ -24,8 +24,17 @@ self.addEventListener('activate', event => {
     self.clients.claim();
 });
 
-// Fetch: serve from cache, fallback to network
+// Fetch: HTMLはネットワーク優先、その他はキャッシュ優先
 self.addEventListener('fetch', event => {
+    if (event.request.mode === 'navigate') {
+        // HTML（画面の読み込み）は常に最新を試みる
+        event.respondWith(
+            fetch(event.request).catch(() => caches.match('./mobile.html'))
+        );
+        return;
+    }
+
+    // その他（アイコン等）はキャッシュがあればそれを使い、なければネットワーク
     event.respondWith(
         caches.match(event.request).then(cached => cached || fetch(event.request))
     );
