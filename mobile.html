@@ -115,6 +115,38 @@
         }
 
         .lock-toggle input {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--primary);
+        }
+
+        .option-row {
+            margin-top: 4px;
+        }
+
+        .option-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
+            color: var(--text-light);
+            cursor: pointer;
+            user-select: none;
+            padding: 3px 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .option-toggle:active {
+            background: #f3f4f6;
+        }
+
+        .option-toggle:has(input:checked) {
+            color: var(--primary);
+            background: rgba(37, 99, 235, 0.08);
+        }
+
+        .option-toggle input {
             width: 15px;
             height: 15px;
             accent-color: var(--primary);
@@ -410,10 +442,16 @@
             </div>
             <div class="field">
                 <div class="label-row">
-                    <label>次回受診日</label>
+                    <label>次回受診日（または一包化末日）</label>
                     <label class="lock-toggle"><input type="checkbox" id="lockNextVisit">🔒</label>
                 </div>
                 <input type="date" id="nextVisitDate">
+                <div class="option-row">
+                    <label class="option-toggle" title="チェックすると受診日/一包化末日の当日を服用日数に含めません">
+                        <input type="checkbox" id="excludeEndDay">
+                        <span>当日を含まない</span>
+                    </label>
+                </div>
             </div>
             <div class="row">
                 <div class="field">
@@ -511,6 +549,7 @@
             const lockNextVisit = $('lockNextVisit');
             const lockLeftover = $('lockLeftover');
             const lockDosage = $('lockDosage');
+            const excludeEndDayCheckbox = $('excludeEndDay');
 
             let calendarDate = new Date();
 
@@ -533,6 +572,13 @@
             [startDateInput, nextVisitDateInput, leftoverInput, dosageInput].forEach(el =>
                 el.addEventListener('input', () => calculateFromDate())
             );
+            excludeEndDayCheckbox.addEventListener('change', () => {
+                if (nextVisitDateInput.value) {
+                    calculateFromDate();
+                } else {
+                    calculateFromDays();
+                }
+            });
             prescriptionDaysInput.addEventListener('input', () => calculateFromDays());
             resetBtn.addEventListener('click', setDefaults);
 
@@ -575,6 +621,7 @@
                 const { startDate, nextVisitDate, leftover, dosage } = getInputs();
                 if (!startDate) return;
 
+                const excludeEndDay = excludeEndDayCheckbox.checked;
                 const daysCovered = Math.floor(leftover / dosage);
                 setText(daysCoveredDisplay, daysCovered);
 
@@ -586,7 +633,8 @@
                         renderCalendar();
                         return;
                     }
-                    const daysDiff = Math.ceil((nextVisitDate - startDate) / 864e5);
+                    const baseDaysDiff = Math.ceil((nextVisitDate - startDate) / 864e5);
+                    const daysDiff = excludeEndDay ? baseDaysDiff : baseDaysDiff + 1;
                     setText(daysUntilVisitDisplay, daysDiff);
 
                     let pd = daysDiff - daysCovered;
@@ -611,6 +659,7 @@
                 const { startDate, leftover, dosage, prescriptionDays } = getInputs();
                 if (!startDate) return;
 
+                const excludeEndDay = excludeEndDayCheckbox.checked;
                 const daysCovered = Math.floor(leftover / dosage);
                 setText(daysCoveredDisplay, daysCovered);
 
@@ -621,10 +670,14 @@
                     endDateDisplay.textContent = formatDate(end);
 
                     const nv = new Date(startDate);
-                    nv.setDate(nv.getDate() + total);
+                    if (excludeEndDay) {
+                        nv.setDate(nv.getDate() + total);
+                    } else {
+                        nv.setDate(nv.getDate() + total - 1);
+                    }
                     nextVisitDateInput.valueAsDate = nv;
 
-                    setText(daysUntilVisitDisplay, Math.ceil((nv - startDate) / 864e5));
+                    setText(daysUntilVisitDisplay, total);
                 } else {
                     endDateDisplay.textContent = '--/--';
                 }
