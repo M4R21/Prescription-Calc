@@ -519,7 +519,7 @@
                     <label>次回受診日（または一包化末日）</label>
                     <label class="lock-toggle"><input type="checkbox" id="lockNextVisit">🔒</label>
                 </div>
-                <input type="date" id="nextVisitDate">
+                <input type="text" id="nextVisitDate" placeholder="年/月/日" onfocus="this.type='date'" onblur="if(!this.value) this.type='text'">
                 <div class="option-row">
                     <label class="option-toggle" title="チェックすると受診日/一包化末日の当日を服用日数に含めません">
                         <input type="checkbox" id="excludeEndDay">
@@ -647,7 +647,15 @@
                 const tomorrow = new Date();
                 tomorrow.setDate(tomorrow.getDate() + 1);
                 startDateInput.valueAsDate = tomorrow;
-                nextVisitDateInput.value = '';
+                
+                const lockNextVisit = $('lockNextVisit');
+                if (!lockNextVisit || !lockNextVisit.checked) {
+                    nextVisitDateInput.value = '';
+                    if (nextVisitDateInput.type === 'date' && nextVisitDateInput.value === '') {
+                        nextVisitDateInput.type = 'text';
+                    }
+                }
+                
                 prescriptionDaysInput.value = 0;
                 endDateDisplay.textContent = '--/--';
                 if(excludeEndDayCheckbox) excludeEndDayCheckbox.checked = false;
@@ -671,9 +679,15 @@
 
             setDefaults();
 
-            [startDateInput, nextVisitDateInput].forEach(el =>
-                el.addEventListener('input', () => calculateAll('date'))
-            );
+            [startDateInput, nextVisitDateInput].forEach(el => {
+                el.addEventListener('input', () => calculateAll('date'));
+                el.addEventListener('click', function(e) {
+                    if (this.type === 'text') this.type = 'date';
+                    if (typeof this.showPicker === 'function') {
+                        try { this.showPicker(); } catch(err) {}
+                    }
+                });
+            });
             
             if(excludeEndDayCheckbox) {
                 excludeEndDayCheckbox.addEventListener('change', () => {
