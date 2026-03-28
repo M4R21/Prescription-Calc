@@ -162,6 +162,7 @@
             font-family: inherit;
             background: #f9fafb;
             -webkit-appearance: none;
+            appearance: none;
         }
 
         .field input:focus {
@@ -423,6 +424,71 @@
         .dot.p {
             background: var(--primary-light);
         }
+
+        /* Multiple Medications Styles */
+        .medication-item {
+            margin-top: 10px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: #f9fafb;
+        }
+
+        .medication-item:first-child {
+            margin-top: 0;
+        }
+
+        .med-result {
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px dashed #ccc;
+            font-size: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-light);
+        }
+
+        .med-result strong {
+            font-size: 0.9rem;
+            color: var(--primary-dark);
+        }
+
+        .remove-med-btn {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            margin: 0;
+            color: #ef4444;
+            background: #fff;
+            border: 1px solid #fca5a5;
+            border-radius: 6px;
+            display: none;
+        }
+
+        #multiMedNotice {
+            display: none;
+            text-align: center;
+            padding: 12px;
+            color: var(--text-light);
+            font-size: 0.85rem;
+            background: #fff;
+            border-radius: var(--radius);
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+        }
+
+        #addMedBtn {
+            margin-top: 8px;
+            margin-bottom: 12px;
+            width: 100%;
+            border-radius: 10px;
+            padding: 12px;
+            background: transparent;
+            border: 1px dashed var(--border);
+            color: var(--text-light);
+            font-size: 0.9rem;
+            font-weight: 500;
+            font-family: inherit;
+        }
     </style>
 </head>
 
@@ -440,6 +506,14 @@
                 <input type="date" id="startDate">
                 <div class="helper">デフォルト: 翌日</div>
             </div>
+        </div>
+
+        <!-- Multi Med Notice -->
+        <div id="multiMedNotice">
+            ※ 複数の薬品が登録されているため、メイン計算結果およびカレンダー表示を省略しています。各薬品の計算結果をご確認ください。
+        </div>
+
+        <div class="card">
             <div class="field">
                 <div class="label-row">
                     <label>次回受診日（または一包化末日）</label>
@@ -453,27 +527,43 @@
                     </label>
                 </div>
             </div>
-            <div class="row">
-                <div class="field">
-                    <div class="label-row">
-                        <label>残薬数</label>
-                        <label class="lock-toggle"><input type="checkbox" id="lockLeftover">🔒</label>
+            <div id="medicationsContainer">
+                <div class="medication-item">
+                    <div class="med-header" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px;">
+                        <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+                            <label class="med-number" style="font-size:1.1rem; font-weight:700; color:var(--primary-dark); min-width: 24px;">1.</label>
+                            <input type="text" class="med-name" placeholder="薬品名（任意）" style="flex: 1; padding: 10px; border-radius: 8px; border: 2px solid #94a3b8; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); font-size: 1rem; background: #fff;">
+                        </div>
+                        <button type="button" class="remove-med-btn">削除</button>
                     </div>
-                    <input type="number" id="leftover" min="0" value="0" inputmode="numeric">
-                </div>
-                <div class="field">
-                    <div class="label-row">
-                        <label>1日服用総数</label>
-                        <label class="lock-toggle"><input type="checkbox" id="lockDosage">🔒</label>
+                    <div class="row">
+                        <div class="field">
+                            <div class="label-row">
+                                <label>残薬数</label>
+                                <label class="lock-toggle"><input type="checkbox" class="lock-leftover">🔒</label>
+                            </div>
+                            <input type="number" class="leftover-input" min="0" value="0" inputmode="numeric">
+                        </div>
+                        <div class="field">
+                            <div class="label-row">
+                                <label>1日服用総数</label>
+                                <label class="lock-toggle"><input type="checkbox" class="lock-dosage">🔒</label>
+                            </div>
+                            <input type="number" class="dosage-input" min="1" value="1" inputmode="numeric">
+                        </div>
                     </div>
-                    <input type="number" id="dosagePerDay" min="1" value="1" inputmode="numeric">
+                    <div class="med-result" style="align-items: baseline;">
+                        <span style="font-size: 0.85rem;">残薬カバー: <strong class="med-covered-days">0</strong>日</span>
+                        <span style="font-size: 1.1rem; font-weight: bold; color: var(--primary-dark);">必要処方: <strong class="med-prescription-days" style="font-size: 1.8rem; margin: 0 4px;">0</strong>日分</span>
+                    </div>
                 </div>
             </div>
-            <button class="reset-btn" id="resetBtn">設定をクリア（初期値に戻す）</button>
+            <button type="button" id="addMedBtn">＋ 別の薬品を追加</button>
+            <button class="reset-btn" id="resetBtn" style="margin-top: 0px;">設定をクリア（初期値に戻す）</button>
         </div>
 
         <!-- Result Card -->
-        <div class="result-card">
+        <div class="result-card" id="mainResultSection">
             <div class="result-row">
                 <div class="result-item">
                     <div class="r-label">次回受診まで</div>
@@ -498,7 +588,7 @@
         </div>
 
         <!-- Calendar Card -->
-        <div class="card">
+        <div class="card" id="calendarSection">
             <div class="cal-controls">
                 <button id="prevMonth">&lt;</button>
                 <span class="cal-month" id="currentMonthYear"></span>
@@ -535,21 +625,21 @@
 
             const startDateInput = $('startDate');
             const nextVisitDateInput = $('nextVisitDate');
-            const leftoverInput = $('leftover');
-            const dosageInput = $('dosagePerDay');
+            const excludeEndDayCheckbox = $('excludeEndDay');
+            const prescriptionDaysInput = $('prescriptionDays');
             const daysUntilVisitDisplay = $('daysUntilVisit');
             const daysCoveredDisplay = $('daysCovered');
-            const prescriptionDaysInput = $('prescriptionDays');
             const endDateDisplay = $('endDate');
+            const medicationsContainer = $('medicationsContainer');
+            const addMedBtn = $('addMedBtn');
+            const mainResultSection = $('mainResultSection');
+            const multiMedNotice = $('multiMedNotice');
+            const calendarSection = $('calendarSection');
             const prevMonthBtn = $('prevMonth');
             const nextMonthBtn = $('nextMonth');
             const currentMonthYearDisplay = $('currentMonthYear');
             const calendarGrid = $('calendarGrid');
             const resetBtn = $('resetBtn');
-            const lockNextVisit = $('lockNextVisit');
-            const lockLeftover = $('lockLeftover');
-            const lockDosage = $('lockDosage');
-            const excludeEndDayCheckbox = $('excludeEndDay');
 
             let calendarDate = new Date();
 
@@ -557,42 +647,106 @@
                 const tomorrow = new Date();
                 tomorrow.setDate(tomorrow.getDate() + 1);
                 startDateInput.valueAsDate = tomorrow;
-                if (!lockLeftover.checked) leftoverInput.value = 0;
-                if (!lockDosage.checked) dosageInput.value = 1;
-                if (!lockNextVisit.checked) nextVisitDateInput.value = '';
+                nextVisitDateInput.value = '';
                 prescriptionDaysInput.value = 0;
                 endDateDisplay.textContent = '--/--';
-                calculateFromDate();
+                if(excludeEndDayCheckbox) excludeEndDayCheckbox.checked = false;
+
+                const items = medicationsContainer.querySelectorAll('.medication-item');
+                for(let i = 1; i < items.length; i++) items[i].remove();
+                
+                const firstItem = items[0];
+                firstItem.querySelector('.med-name').value = '';
+                if (!firstItem.querySelector('.lock-leftover').checked) {
+                    firstItem.querySelector('.leftover-input').value = 0;
+                }
+                if (!firstItem.querySelector('.lock-dosage').checked) {
+                    firstItem.querySelector('.dosage-input').value = 1;
+                }
+                updateMedicationLabels();
+
                 calendarDate = new Date();
-                renderCalendar();
+                calculateAll('date');
             }
 
             setDefaults();
 
-            [startDateInput, nextVisitDateInput, leftoverInput, dosageInput].forEach(el =>
-                el.addEventListener('input', () => calculateFromDate())
+            [startDateInput, nextVisitDateInput].forEach(el =>
+                el.addEventListener('input', () => calculateAll('date'))
             );
-            excludeEndDayCheckbox.addEventListener('change', () => {
-                if (nextVisitDateInput.value) {
-                    calculateFromDate();
-                } else {
-                    calculateFromDays();
-                }
-            });
-            prescriptionDaysInput.addEventListener('input', () => calculateFromDays());
+            
+            if(excludeEndDayCheckbox) {
+                excludeEndDayCheckbox.addEventListener('change', () => {
+                    calculateAll(nextVisitDateInput.value ? 'date' : 'days');
+                });
+            }
+            
+            prescriptionDaysInput.addEventListener('input', () => calculateAll('days'));
             resetBtn.addEventListener('click', setDefaults);
 
-            prevMonthBtn.addEventListener('click', () => {
-                calendarDate.setMonth(calendarDate.getMonth() - 1);
-                renderCalendar();
-            });
-            nextMonthBtn.addEventListener('click', () => {
-                calendarDate.setMonth(calendarDate.getMonth() + 1);
-                renderCalendar();
+            medicationsContainer.addEventListener('input', (e) => {
+                if(e.target.classList.contains('leftover-input') || e.target.classList.contains('dosage-input')) {
+                    calculateAll(nextVisitDateInput.value ? 'date' : 'days');
+                }
             });
 
-            function setText(el, val) {
-                el.innerHTML = `${val}<span class="r-unit">日</span>`;
+            addMedBtn.addEventListener('click', () => {
+                const items = medicationsContainer.querySelectorAll('.medication-item');
+                const newItem = items[0].cloneNode(true);
+                newItem.querySelector('.med-name').value = '';
+                newItem.querySelector('.leftover-input').value = 0;
+                newItem.querySelector('.dosage-input').value = 1;
+                newItem.querySelector('.lock-leftover').checked = false;
+                newItem.querySelector('.lock-dosage').checked = false;
+                
+                medicationsContainer.appendChild(newItem);
+                updateMedicationLabels();
+                calculateAll(nextVisitDateInput.value ? 'date' : 'days');
+            });
+
+            medicationsContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-med-btn')) {
+                    const items = medicationsContainer.querySelectorAll('.medication-item');
+                    if (items.length > 1) {
+                        e.target.closest('.medication-item').remove();
+                        updateMedicationLabels();
+                        calculateAll(nextVisitDateInput.value ? 'date' : 'days');
+                    }
+                }
+            });
+
+            function updateMedicationLabels() {
+                const items = medicationsContainer.querySelectorAll('.medication-item');
+                items.forEach((item, index) => {
+                    item.querySelector('label').textContent = index + 1;
+                    const removeBtn = item.querySelector('.remove-med-btn');
+                    if (items.length > 1) {
+                        removeBtn.style.display = 'inline-block';
+                    } else {
+                        removeBtn.style.display = 'none';
+                    }
+                });
+            }
+
+            if(prevMonthBtn) {
+                prevMonthBtn.addEventListener('click', () => {
+                    calendarDate.setMonth(calendarDate.getMonth() - 1);
+                    renderCalendar();
+                });
+            }
+            if(nextMonthBtn) {
+                nextMonthBtn.addEventListener('click', () => {
+                    calendarDate.setMonth(calendarDate.getMonth() + 1);
+                    renderCalendar();
+                });
+            }
+
+            function setText(el, val, skipUnit = false) {
+                if (skipUnit || isNaN(val)) {
+                    el.innerHTML = val;
+                } else {
+                    el.innerHTML = `${val}<span class="r-unit">日</span>`;
+                }
             }
 
             function formatDate(d) {
@@ -602,89 +756,120 @@
             }
 
             function norm(d) {
+                if (!d) return null;
                 const x = new Date(d);
                 x.setHours(0, 0, 0, 0);
                 return x;
             }
 
-            function getInputs() {
-                return {
-                    startDate: startDateInput.value ? norm(startDateInput.value) : null,
-                    nextVisitDate: nextVisitDateInput.value ? norm(nextVisitDateInput.value) : null,
-                    leftover: parseInt(leftoverInput.value) || 0,
-                    dosage: parseInt(dosageInput.value) || 1,
-                    prescriptionDays: parseInt(prescriptionDaysInput.value) || 0
-                };
-            }
+            function calculateAll(mode = 'date') {
+                const startDateRaw = startDateInput.value;
+                if (!startDateRaw) return;
+                const startDate = norm(startDateRaw);
+                
+                const excludeEndDay = excludeEndDayCheckbox ? excludeEndDayCheckbox.checked : false;
+                const items = medicationsContainer.querySelectorAll('.medication-item');
+                const isMulti = items.length > 1;
 
-            function calculateFromDate() {
-                const { startDate, nextVisitDate, leftover, dosage } = getInputs();
-                if (!startDate) return;
+                if (isMulti) {
+                    if(multiMedNotice) multiMedNotice.style.display = 'block';
+                    if(calendarSection) calendarSection.style.display = 'none';
+                    if(mainResultSection) mainResultSection.style.display = 'none';
+                } else {
+                    if(multiMedNotice) multiMedNotice.style.display = 'none';
+                    if(calendarSection) calendarSection.style.display = 'block';
+                    if(mainResultSection) mainResultSection.style.display = 'block';
+                }
 
-                const excludeEndDay = excludeEndDayCheckbox.checked;
-                const daysCovered = Math.floor(leftover / dosage);
-                setText(daysCoveredDisplay, daysCovered);
+                let daysDiffUntilVisit = 0;
 
-                if (nextVisitDate) {
-                    if (nextVisitDate <= startDate) {
-                        setText(daysUntilVisitDisplay, 0);
-                        prescriptionDaysInput.value = 0;
-                        endDateDisplay.textContent = '--/--';
-                        renderCalendar();
-                        return;
-                    }
-                    const baseDaysDiff = Math.ceil((nextVisitDate - startDate) / 864e5);
-                    const daysDiff = excludeEndDay ? baseDaysDiff : baseDaysDiff + 1;
-                    setText(daysUntilVisitDisplay, daysDiff);
-
-                    let pd = daysDiff - daysCovered;
-                    if (pd < 0) pd = 0;
-                    prescriptionDaysInput.value = pd;
-
-                    const totalDays = daysCovered + pd;
-                    if (totalDays > 0) {
-                        const end = new Date(startDate);
-                        end.setDate(end.getDate() + totalDays - 1);
-                        endDateDisplay.textContent = formatDate(end);
+                if (mode === 'date') {
+                    const nextVisitDateRaw = nextVisitDateInput.value;
+                    if (nextVisitDateRaw) {
+                        const nextVisitDate = norm(nextVisitDateRaw);
+                        if (nextVisitDate <= startDate) {
+                            daysDiffUntilVisit = 0;
+                            prescriptionDaysInput.value = 0;
+                            if(!isMulti) endDateDisplay.textContent = '--/--';
+                        } else {
+                            const timeDiff = nextVisitDate - startDate;
+                            const baseDaysDiff = Math.ceil(timeDiff / 864e5);
+                            daysDiffUntilVisit = excludeEndDay ? baseDaysDiff : baseDaysDiff + 1;
+                        }
                     } else {
-                        endDateDisplay.textContent = '--/--';
+                        setText(daysUntilVisitDisplay, '-', true);
                     }
                 } else {
-                    setText(daysUntilVisitDisplay, '-');
-                }
-                renderCalendar();
-            }
-
-            function calculateFromDays() {
-                const { startDate, leftover, dosage, prescriptionDays } = getInputs();
-                if (!startDate) return;
-
-                const excludeEndDay = excludeEndDayCheckbox.checked;
-                const daysCovered = Math.floor(leftover / dosage);
-                setText(daysCoveredDisplay, daysCovered);
-
-                const total = daysCovered + prescriptionDays;
-                if (total > 0) {
-                    const end = new Date(startDate);
-                    end.setDate(end.getDate() + total - 1);
-                    endDateDisplay.textContent = formatDate(end);
-
-                    const nv = new Date(startDate);
-                    if (excludeEndDay) {
-                        nv.setDate(nv.getDate() + total);
+                    const firstItem = items[0];
+                    const leftover = parseInt(firstItem.querySelector('.leftover-input').value) || 0;
+                    const dosage = parseInt(firstItem.querySelector('.dosage-input').value) || 1;
+                    const daysCovered = Math.floor(leftover / dosage);
+                    const prescriptionDaysGlobal = parseInt(prescriptionDaysInput.value) || 0;
+                    
+                    const totalDuration = daysCovered + prescriptionDaysGlobal;
+                    if (totalDuration > 0) {
+                        daysDiffUntilVisit = totalDuration; 
+                        
+                        const nextVisit = new Date(startDate);
+                        if (excludeEndDay) {
+                            nextVisit.setDate(nextVisit.getDate() + totalDuration);
+                        } else {
+                            nextVisit.setDate(nextVisit.getDate() + totalDuration - 1);
+                        }
+                        nextVisitDateInput.valueAsDate = nextVisit;
                     } else {
-                        nv.setDate(nv.getDate() + total - 1);
+                        daysDiffUntilVisit = 0;
+                        endDateDisplay.textContent = '--/--';
                     }
-                    nextVisitDateInput.valueAsDate = nv;
-
-                    setText(daysUntilVisitDisplay, total);
-                } else {
-                    endDateDisplay.textContent = '--/--';
                 }
-                renderCalendar();
+
+                if (nextVisitDateInput.value || mode === 'days') {
+                    setText(daysUntilVisitDisplay, daysDiffUntilVisit);
+                }
+
+                items.forEach((item, index) => {
+                    const leftover = parseInt(item.querySelector('.leftover-input').value) || 0;
+                    const dosage = parseInt(item.querySelector('.dosage-input').value) || 1;
+                    const daysCovered = Math.floor(leftover / dosage);
+                    
+                    item.querySelector('.med-covered-days').textContent = daysCovered;
+                    
+                    let targetPrescriptionDays = 0;
+                    if (daysDiffUntilVisit > 0) {
+                        targetPrescriptionDays = daysDiffUntilVisit - daysCovered;
+                        if (targetPrescriptionDays < 0) targetPrescriptionDays = 0;
+                    }
+                    
+                    item.querySelector('.med-prescription-days').textContent = targetPrescriptionDays;
+
+                    if (index === 0) {
+                        if (!isMulti) setText(daysCoveredDisplay, daysCovered);
+                        
+                        if (mode === 'date' && nextVisitDateInput.value) {
+                            prescriptionDaysInput.value = targetPrescriptionDays;
+                        }
+                        
+                        const totalDays = daysCovered + (parseInt(prescriptionDaysInput.value) || targetPrescriptionDays);
+                        const endDate = new Date(startDate);
+                        endDate.setDate(endDate.getDate() + totalDays - 1);
+                        
+                        if (!isMulti) {
+                            if (totalDays > 0) {
+                                endDateDisplay.textContent = formatDate(endDate);
+                            } else {
+                                endDateDisplay.textContent = '--/--';
+                            }
+                        }
+                    }
+                });
+
+                if (!isMulti) {
+                    renderCalendar();
+                }
             }
 
             function renderCalendar() {
+                if (!calendarSection || calendarSection.style.display === 'none') return;
                 calendarGrid.innerHTML = '';
                 const year = calendarDate.getFullYear();
                 const month = calendarDate.getMonth();
@@ -708,9 +893,15 @@
 
                 const startDate = startDateInput.value ? norm(startDateInput.value) : null;
                 const nextVisitDate = nextVisitDateInput.value ? norm(nextVisitDateInput.value) : null;
-                const leftover = parseInt(leftoverInput.value) || 0;
-                const dosage = parseInt(dosageInput.value) || 1;
-                const daysCovered = Math.floor(leftover / dosage);
+                
+                const firstItem = medicationsContainer.querySelector('.medication-item');
+                let daysCovered = 0;
+                if (firstItem) {
+                    const leftover = parseInt(firstItem.querySelector('.leftover-input').value) || 0;
+                    const dosage = parseInt(firstItem.querySelector('.dosage-input').value) || 1;
+                    daysCovered = Math.floor(leftover / dosage);
+                }
+                
                 const today = norm(new Date());
 
                 for (let d = 1; d <= daysInMonth; d++) {
@@ -742,7 +933,7 @@
                 }
             }
 
-            calculateFromDate();
+            calculateAll('date');
         });
     </script>
 </body>
